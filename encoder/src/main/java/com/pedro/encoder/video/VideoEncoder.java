@@ -56,7 +56,7 @@ public class VideoEncoder implements GetCameraData {
   private int fps = 30;
   private int bitRate = 1200 * 1024; //in kbps
   private int rotation = 90;
-  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.YUV420Dynamical;
+  private FormatVideoEncoder formatVideoEncoder = FormatVideoEncoder.SURFACE;
   //for disable video
   private boolean sendBlackImage = false;
   private byte[] blackImage;
@@ -110,7 +110,9 @@ public class VideoEncoder implements GetCameraData {
       videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
       videoFormat.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
       videoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, fps);
-      videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2);
+      videoFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
+      videoFormat.setInteger(MediaFormat.KEY_INTRA_REFRESH_PERIOD, 1);
+      videoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
       if (hardwareRotation) {
         videoFormat.setInteger("rotation-degrees", rotation);
       }
@@ -528,6 +530,9 @@ public class VideoEncoder implements GetCameraData {
       }
       String[] types = mci.getSupportedTypes();
       for (String type : types) {
+          Log.i(TAG, String.format("LIST ALL videoEncoders %s type = %s", mci.getName(), type));
+      }
+      for (String type : types) {
         if (type.equalsIgnoreCase(mime)) {
           Log.i(TAG, String.format("videoEncoder %s type supported: %s", mci.getName(), type));
           MediaCodecInfo.CodecCapabilities codecCapabilities = mci.getCapabilitiesForType(mime);
@@ -557,6 +562,9 @@ public class VideoEncoder implements GetCameraData {
         continue;
       }
       String[] types = mci.getSupportedTypes();
+      for (String type : types) {
+          Log.i(TAG, String.format("LIST ALL videoEncoders %s type = %s", mci.getName(), type));
+      }
       for (String type : types) {
         if (type.equalsIgnoreCase(mime)) {
           Log.i(TAG, String.format("videoEncoder %s type supported: %s", mci.getName(), type));

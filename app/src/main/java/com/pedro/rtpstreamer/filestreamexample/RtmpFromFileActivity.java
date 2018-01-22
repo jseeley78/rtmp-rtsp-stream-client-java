@@ -47,6 +47,7 @@ public class RtmpFromFileActivity extends AppCompatActivity
     etUrl.setHint(R.string.hint_rtmp);
     tvFile = findViewById(R.id.tv_file);
     rtmpFromFile = new RtmpFromFile(this, this);
+    etUrl.setText("rtmp://ids3-ls.dev.caster.tv/origin/e47830bd-c3a6-4c4a-99c4-c2614b8df9ee");
   }
 
   @Override

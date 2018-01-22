@@ -78,6 +78,7 @@ public class RtmpActivity extends AppCompatActivity
 
     etUrl = findViewById(R.id.et_rtp_url);
     etUrl.setHint(R.string.hint_rtmp);
+    etUrl.setText("rtmp://ids3-ls.dev.caster.tv/origin/ea803129-8805-4184-9656-f3b3114c6bb6");
     bStartStop = findViewById(R.id.b_start_stop);
     bStartStop.setOnClickListener(this);
     bRecord = findViewById(R.id.b_record);
@@ -249,7 +250,7 @@ public class RtmpActivity extends AppCompatActivity
               Integer.parseInt(etSampleRate.getText().toString()),
               rgChannel.getCheckedRadioButtonId() == R.id.rb_stereo, cbEchoCanceler.isChecked(),
               cbNoiseSuppressor.isChecked())) {
-            rtmpCamera1.startStream(etUrl.getText().toString());
+              rtmpCamera1.startStream(etUrl.getText().toString());
           } else {
             //If you see this all time when you start stream,
             //it is because your encoder device dont support the configuration

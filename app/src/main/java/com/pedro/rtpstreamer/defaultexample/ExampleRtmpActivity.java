@@ -35,6 +35,7 @@ public class ExampleRtmpActivity extends AppCompatActivity
     etUrl = findViewById(R.id.et_rtp_url);
     etUrl.setHint(R.string.hint_rtmp);
     rtmpCamera1 = new RtmpCamera1(surfaceView, this);
+    etUrl.setText("rtmp://ids3-ls.dev.caster.tv/origin/e47830bd-c3a6-4c4a-99c4-c2614b8df9ee");
   }
 
   @Override

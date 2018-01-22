@@ -43,32 +43,41 @@ import java.util.concurrent.LinkedBlockingQueue;
  * muxer.release();
  */
 public class SrsFlvMuxer {
-
   private static final String TAG = "SrsFlvMuxer";
-
   private static final int VIDEO_ALLOC_SIZE = 128 * 1024;
   private static final int AUDIO_ALLOC_SIZE = 4 * 1024;
+  private static final int RTMP_QUEUE_SIZE = 30;
+  private static final int RTMP_QUEUE_THRESHOLD = 28; //fixme: update to 25?
   private volatile boolean connected = false;
   private DefaultRtmpPublisher publisher;
   private Thread worker;
   private SrsFlv flv = new SrsFlv();
-  private boolean needToFindKeyFrame = true;
   private SrsFlvFrame mVideoSequenceHeader;
   private SrsFlvFrame mAudioSequenceHeader;
   private SrsAllocator mVideoAllocator = new SrsAllocator(VIDEO_ALLOC_SIZE);
   private SrsAllocator mAudioAllocator = new SrsAllocator(AUDIO_ALLOC_SIZE);
-  private BlockingQueue<SrsFlvFrame> mFlvTagCache = new LinkedBlockingQueue<>(30);
+  private BlockingQueue<SrsFlvFrame> mFlvTagCache = new LinkedBlockingQueue<>(RTMP_QUEUE_SIZE);
   private ConnectCheckerRtmp connectCheckerRtmp;
   private int sampleRate = 44100;
   private boolean isPpsSpsSend = false;
+  private boolean sentFirstKeyFrame = false;
   private byte profileIop = ProfileIop.BASELINE;
+  public interface BacklogListener {
+        public void onBacklog(Boolean set);
+    }
+    private BacklogListener listener;
 
   /**
    * constructor.
    */
   public SrsFlvMuxer(ConnectCheckerRtmp connectCheckerRtmp) {
     this.connectCheckerRtmp = connectCheckerRtmp;
+    this.listener = null;
     publisher = new DefaultRtmpPublisher(connectCheckerRtmp);
+  }
+
+  public void setBacklogListener(BacklogListener listener) {
+      this.listener = listener;
   }
 
   public void setProfileIop(byte profileIop)
@@ -137,8 +146,15 @@ public class SrsFlvMuxer {
 
     if (frame.is_video()) {
       if (frame.is_keyframe()) {
+          new Thread( new Runnable() {
+              public void run()  {
+                  try  { Thread.sleep( 2000 ); }
+                  catch (InterruptedException ie)  {}
+                  sentFirstKeyFrame = true;
+              }
+          } ).start();
         Log.i(TAG,
-            String.format("worker: send frame type=%d, dts=%d, size=%dB", frame.type, frame.dts,
+            String.format("worker: sent keyframe type=%d, dts=%d, size=%dB", frame.type, frame.dts,
                 frame.flvTag.array().length));
       }
       publisher.publishVideoData(frame.flvTag.array(), frame.flvTag.size(), frame.dts);
@@ -156,7 +172,7 @@ public class SrsFlvMuxer {
     worker = new Thread(new Runnable() {
       @Override
       public void run() {
-        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
         if (!connect(rtmpUrl)) {
           return;
         }
@@ -173,10 +189,18 @@ public class SrsFlvMuxer {
                 sendFlvTag(mAudioSequenceHeader);
               }
             } else {
-              if (frame.is_video() && mVideoSequenceHeader != null) {
-                sendFlvTag(frame);
-              } else if (frame.is_audio() && mAudioSequenceHeader != null) {
-                sendFlvTag(frame);
+              if (sentFirstKeyFrame && (mFlvTagCache.remainingCapacity() <= RTMP_QUEUE_THRESHOLD && !frame.is_keyframe())) {
+                  if(listener != null) {
+                      Log.i(TAG, "rtmp frame discarded");
+                      listener.onBacklog(true);
+                  }
+                continue;
+              } else {
+                if (frame.is_video() && mVideoSequenceHeader != null) {
+                  sendFlvTag(frame);
+                } else if (frame.is_audio() && mAudioSequenceHeader != null) {
+                  sendFlvTag(frame);
+                }
               }
             }
           } catch (InterruptedException e) {
@@ -203,7 +227,6 @@ public class SrsFlvMuxer {
     }
     mFlvTagCache.clear();
     flv.reset();
-    needToFindKeyFrame = true;
     Log.i(TAG, "SrsFlvMuxer closed");
 
     new Thread(new Runnable() {
@@ -804,7 +827,6 @@ public class SrsFlvMuxer {
 
       ipbs.add(avc.muxNaluHeader(frame));
       ipbs.add(frame);
-
       writeH264IpbFrame(ipbs, type, pts);
       ipbs.clear();
     }
@@ -855,13 +877,11 @@ public class SrsFlvMuxer {
       frame.dts = dts;
       frame.frame_type = frame_type;
       frame.avc_aac_type = avc_aac_type;
-
+      Log.i(TAG, "buffer free capacity: "+mFlvTagCache.remainingCapacity());
       if (frame.is_video()) {
-        if (needToFindKeyFrame) {
-          if (frame.is_keyframe()) {
-            needToFindKeyFrame = false;
-            flvFrameCacheAdd(frame);
-          }
+        if (frame.is_keyframe()) {
+            Log.i(TAG, "KEYFRAME!!!");
+            flvFrameCacheAddWithWait(frame);
         } else {
           flvFrameCacheAdd(frame);
         }
@@ -875,6 +895,15 @@ public class SrsFlvMuxer {
         mFlvTagCache.add(frame);
       } catch (IllegalStateException e) {
         Log.i(TAG, "frame discarded");
+      }
+    }
+    private void flvFrameCacheAddWithWait(SrsFlvFrame frame) {
+      try {
+        mFlvTagCache.put(frame);
+      } catch (InterruptedException e) {
+        Log.i(TAG, "frame discarded" + e);
+      } catch (NullPointerException e) {
+        Log.i(TAG, "frame discarded" + e);
       }
     }
   }

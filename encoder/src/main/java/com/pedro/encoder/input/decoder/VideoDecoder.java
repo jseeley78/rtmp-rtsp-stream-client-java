@@ -74,7 +74,7 @@ public class VideoDecoder {
     thread = new Thread(new Runnable() {
       @Override
       public void run() {
-        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
+        android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
         decodeVideo();
       }
     });

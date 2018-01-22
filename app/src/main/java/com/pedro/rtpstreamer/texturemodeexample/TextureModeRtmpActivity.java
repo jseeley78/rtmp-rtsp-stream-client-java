@@ -42,6 +42,7 @@ public class TextureModeRtmpActivity extends AppCompatActivity
     etUrl.setHint(R.string.hint_rtmp);
     rtmpCamera2 = new RtmpCamera2(textureView, this);
     textureView.setSurfaceTextureListener(surfaceTextureListener);
+    etUrl.setText("rtmp://ids3-ls.dev.caster.tv/origin/e47830bd-c3a6-4c4a-99c4-c2614b8df9ee");
   }
 
   @Override

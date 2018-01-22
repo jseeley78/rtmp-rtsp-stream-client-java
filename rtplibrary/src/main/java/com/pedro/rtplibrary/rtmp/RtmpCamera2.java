@@ -24,26 +24,67 @@ import java.nio.ByteBuffer;
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class RtmpCamera2 extends Camera2Base {
 
+  public interface ReduceBitrateListener {
+    public void onReduceBitrate(Boolean set);
+  }
+  private ReduceBitrateListener listener;
+  public void setReduceBitrateListener(ReduceBitrateListener listener) {
+    this.listener = listener;
+  }
+
   private SrsFlvMuxer srsFlvMuxer;
 
   public RtmpCamera2(SurfaceView surfaceView, ConnectCheckerRtmp connectChecker) {
     super(surfaceView, surfaceView.getContext());
     srsFlvMuxer = new SrsFlvMuxer(connectChecker);
+    srsFlvMuxer.setBacklogListener(new SrsFlvMuxer.BacklogListener() {
+        @Override
+        public void onBacklog(Boolean hasBacklog) {
+            if(listener != null) {
+                listener.onReduceBitrate(hasBacklog);
+            }
+        }
+    });
   }
 
   public RtmpCamera2(TextureView textureView, ConnectCheckerRtmp connectChecker) {
     super(textureView, textureView.getContext());
     srsFlvMuxer = new SrsFlvMuxer(connectChecker);
+    srsFlvMuxer.setBacklogListener(new SrsFlvMuxer.BacklogListener() {
+        @Override
+        public void onBacklog(Boolean hasBacklog) {
+            if(listener != null) {
+                listener.onReduceBitrate(hasBacklog);
+            }
+        }
+    });
   }
 
   public RtmpCamera2(OpenGlView openGlView, ConnectCheckerRtmp connectChecker) {
     super(openGlView, openGlView.getContext());
+    this.listener = null;
     srsFlvMuxer = new SrsFlvMuxer(connectChecker);
+    srsFlvMuxer.setBacklogListener(new SrsFlvMuxer.BacklogListener() {
+      @Override
+      public void onBacklog(Boolean hasBacklog) {
+          if(listener != null) {
+              listener.onReduceBitrate(hasBacklog);
+          }
+      }
+    });
   }
 
   public RtmpCamera2(Context context, ConnectCheckerRtmp connectChecker) {
     super(context);
     srsFlvMuxer = new SrsFlvMuxer(connectChecker);
+    srsFlvMuxer.setBacklogListener(new SrsFlvMuxer.BacklogListener() {
+        @Override
+        public void onBacklog(Boolean hasBacklog) {
+            if(listener != null) {
+                listener.onReduceBitrate(hasBacklog);
+            }
+        }
+    });
   }
 
   /**
