@@ -129,7 +129,6 @@ public abstract class Camera1Base
     int imageFormat = ImageFormat.NV21; //supported nv21 and yv12
     if (openGlView == null) {
       cameraManager.prepareCamera(width, height, fps, imageFormat);
-      videoEncoder.setImageFormat(imageFormat);
       return videoEncoder.prepareVideoEncoder(width, height, fps, bitrate, rotation,
           hardwareRotation, FormatVideoEncoder.YUV420Dynamical);
     } else {
@@ -249,7 +248,7 @@ public abstract class Camera1Base
   public void startPreview(@Camera1Facing int cameraFacing, int width, int height) {
     if (!isStreaming() && !onPreview) {
       if (openGlView != null && Build.VERSION.SDK_INT >= 18) {
-        openGlView.startGLThread();
+        openGlView.startGLThread(false);
         cameraManager =
             new Camera1ApiManager(openGlView.getSurfaceTexture(), openGlView.getContext());
       }
@@ -344,7 +343,7 @@ public abstract class Camera1Base
       } else {
         openGlView.setEncoderSize(videoEncoder.getWidth(), videoEncoder.getHeight());
       }
-      openGlView.startGLThread();
+      openGlView.startGLThread(false);
       openGlView.addMediaCodecSurface(videoEncoder.getInputSurface());
       cameraManager =
           new Camera1ApiManager(openGlView.getSurfaceTexture(), openGlView.getContext());
